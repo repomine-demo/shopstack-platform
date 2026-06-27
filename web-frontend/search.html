@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search — ShopStack</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f8f9fa; color: #212529; }
+
+    nav { background: #1a1a2e; color: white; padding: 0 2rem; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    nav .logo { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; text-decoration: none; color: white; }
+    nav .logo span { color: #6c63ff; }
+    nav .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+    nav a.nav-link { color: #a0aec0; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.15s; }
+    nav a.nav-link:hover { color: white; }
+    nav .cart-btn { background: #6c63ff; border: none; color: white; padding: 0.5rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; transition: background 0.2s; }
+    nav .cart-btn:hover { background: #5a52d5; }
+    nav .cart-count { background: #ff4757; color: white; border-radius: 50%; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+
+    /* Search header — calls catalog-service: GET /api/catalog/products?q=&category= */
+    .search-header { background: white; border-bottom: 1px solid #e9ecef; padding: 1.5rem 2rem; }
+    .search-header-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+    .search-row { display: flex; gap: 0; box-shadow: 0 2px 12px rgba(0,0,0,0.08); border-radius: 10px; overflow: hidden; border: 2px solid #e9ecef; transition: border-color 0.2s; }
+    .search-row:focus-within { border-color: #6c63ff; }
+    .search-row input { flex: 1; padding: 0.9rem 1.25rem; border: none; font-size: 1rem; outline: none; color: #212529; }
+    .search-row button { background: #6c63ff; border: none; color: white; padding: 0 1.75rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .search-row button:hover { background: #5a52d5; }
+
+    /* Filters */
+    .filters-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+    .filter-label { font-size: 0.82rem; font-weight: 600; color: #adb5bd; }
+    .filter-chip { background: #f1f3f5; border: 2px solid transparent; border-radius: 20px; padding: 0.35rem 1rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s; color: #495057; }
+    .filter-chip:hover, .filter-chip.active { background: #6c63ff; color: white; border-color: #6c63ff; }
+
+    /* Sort + results count */
+    .results-bar { max-width: 1100px; margin: 1.25rem auto 0; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; }
+    .results-count { font-size: 0.88rem; color: #6c757d; }
+    .results-count strong { color: #212529; }
+    .sort-select { padding: 0.4rem 0.75rem; border: 2px solid #e9ecef; border-radius: 6px; font-size: 0.85rem; font-weight: 600; color: #495057; background: white; cursor: pointer; outline: none; }
+    .sort-select:focus { border-color: #6c63ff; }
+
+    /* Grid */
+    .results-grid { max-width: 1100px; margin: 1.25rem auto 4rem; padding: 0 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
+
+    /* Product card */
+    .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; text-decoration: none; color: inherit; display: block; }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .img-wrap { background: #f1f3f5; height: 180px; display: flex; align-items: center; justify-content: center; font-size: 4rem; position: relative; }
+    .badge { position: absolute; top: 10px; left: 10px; background: #ff4757; color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .badge.new { background: #2ed573; }
+    .badge.hot { background: #ffa502; }
+    .card-body { padding: 1rem; }
+    .card-sku { font-size: 0.7rem; color: #adb5bd; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 0.25rem; }
+    .card-name { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.3; }
+    .card-desc { font-size: 0.8rem; color: #6c757d; margin-bottom: 0.9rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-stars { font-size: 0.78rem; color: #adb5bd; margin-bottom: 0.75rem; }
+    .card-stars .stars { color: #ffc107; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-price { font-size: 1.25rem; font-weight: 800; color: #1a1a2e; }
+    .add-btn { background: #6c63ff; border: none; color: white; padding: 0.45rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: background 0.2s; }
+    .add-btn:hover { background: #5a52d5; }
+
+    /* No results */
+    .no-results { text-align: center; padding: 4rem; color: #adb5bd; grid-column: 1/-1; }
+    .no-results .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* Active query highlight */
+    .query-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: #ede9ff; color: #6c63ff; font-size: 0.82rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+    .query-badge button { background: none; border: none; color: #6c63ff; cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: #1a1a2e; color: white; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; z-index: 300; transition: transform 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .results-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+      .results-bar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Shop<span>Stack</span></a>
+  <div class="nav-right">
+    <a class="nav-link" href="index.html">Home</a>
+    <button class="cart-btn" onclick="window.location='index.html#cart'">
+      🛒 Cart <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Search header — catalog-service: GET /api/catalog/products?q=:query&category=:cat -->
+<div class="search-header">
+  <div class="search-header-inner">
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Search products, brands, categories…" onkeydown="if(event.key==='Enter')doSearch()" />
+      <button onclick="doSearch()">Search</button>
+    </div>
+    <div class="filters-row">
+      <span class="filter-label">Category:</span>
+      <div class="filter-chip active" onclick="setCategory(null, this)">All</div>
+      <div class="filter-chip" onclick="setCategory('apparel', this)">👕 Apparel</div>
+      <div class="filter-chip" onclick="setCategory('electronics', this)">💻 Electronics</div>
+      <div class="filter-chip" onclick="setCategory('home', this)">🏠 Home & Living</div>
+      <div class="filter-chip" onclick="setCategory('sports', this)">⚽ Sports</div>
+      <div class="filter-chip" onclick="setCategory('books', this)">📚 Books</div>
+    </div>
+  </div>
+</div>
+
+<div class="results-bar">
+  <div class="results-count" id="resultsCount"></div>
+  <select class="sort-select" id="sortSelect" onchange="renderResults()">
+    <option value="relevance">Sort: Relevance</option>
+    <option value="price-asc">Price: Low to High</option>
+    <option value="price-desc">Price: High to Low</option>
+    <option value="rating">Top Rated</option>
+    <option value="newest">Newest</option>
+  </select>
+</div>
+
+<div class="results-grid" id="resultsGrid"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Service: catalog-service  →  GET /api/catalog/products?q=&category=&sort=
+// This page is the dedicated search surface for the catalog-service search endpoint.
+const PRODUCTS = [
+  { id:1,  sku:"SHIRT-BLU-M",   name:"Classic Blue Oxford Shirt",       desc:"Premium cotton, tailored fit. Perfect for any occasion.",           price:49.99,  emoji:"👕", category:"apparel",     badge:"",    rating:4.6, reviews:124,  isNew:false },
+  { id:2,  sku:"LAPTOP-PRO-15", name:"ProBook Laptop 15\"",              desc:"Intel i7, 16GB RAM, 512GB SSD. Built for developers.",               price:1299.00,emoji:"💻", category:"electronics", badge:"SALE",rating:4.8, reviews:312,  isNew:false },
+  { id:3,  sku:"MUG-BLK-350",   name:"Matte Black Coffee Mug",          desc:"350ml ceramic, dishwasher safe. Holds heat 40% longer.",             price:14.99, emoji:"☕", category:"home",        badge:"",    rating:4.9, reviews:876,  isNew:true  },
+  { id:4,  sku:"SNKR-WHT-42",   name:"Urban Runner Sneakers",           desc:"Lightweight mesh upper, cushioned sole. Sizes 36–47.",               price:89.99, emoji:"👟", category:"apparel",     badge:"",    rating:4.5, reviews:201,  isNew:true  },
+  { id:5,  sku:"HEADPH-NC-700", name:"Studio Noise-Cancel Headphones",  desc:"40hr battery, premium ANC sound, USB-C fast charge.",                price:249.99,emoji:"🎧", category:"electronics", badge:"HOT", rating:4.7, reviews:543,  isNew:false },
+  { id:6,  sku:"YOGA-MAT-6MM",  name:"Pro Yoga Mat 6mm",                desc:"Non-slip, eco-friendly TPE. 183cm × 61cm, includes strap.",          price:39.99, emoji:"🧘", category:"sports",      badge:"",    rating:4.6, reviews:88,   isNew:false },
+  { id:7,  sku:"BOOK-CLEANCODE",name:"Clean Code",                      desc:"Robert C. Martin — the bible of software craftsmanship.",             price:34.99, emoji:"📗", category:"books",       badge:"",    rating:4.8, reviews:1204, isNew:false },
+  { id:8,  sku:"PLANT-MONSTERA",name:"Monstera Deliciosa",              desc:"60cm plant, ceramic pot included. Ships same day.",                   price:59.99, emoji:"🌿", category:"home",        badge:"NEW", rating:4.7, reviews:67,   isNew:true  },
+  { id:9,  sku:"WATERBOTTLE-1L",name:"Insulated Water Bottle 1L",       desc:"Cold 24h, hot 12h. BPA-free stainless, fits cup holders.",           price:29.99, emoji:"🍶", category:"sports",      badge:"",    rating:4.7, reviews:445,  isNew:false },
+  { id:10, sku:"KEYBOARD-MECH", name:"Mechanical Keyboard TKL",        desc:"Cherry MX Red, RGB backlit, USB-C, aluminium faceplate.",             price:129.99,emoji:"⌨️", category:"electronics", badge:"",    rating:4.6, reviews:178,  isNew:true  },
+  { id:11, sku:"CANDLE-LAVNDR", name:"Lavender Soy Candle",             desc:"60hr burn, hand-poured, pure lavender oil, amber glass jar.",        price:22.99, emoji:"🕯️", category:"home",        badge:"",    rating:4.9, reviews:312,  isNew:false },
+  { id:12, sku:"BOOK-DDIA",     name:"Designing Data-Intensive Apps",   desc:"Martin Kleppmann — essential reading for engineers at scale.",        price:54.99, emoji:"📘", category:"books",       badge:"HOT", rating:4.9, reviews:2100, isNew:false },
+];
+
+let activeQuery = "";
+let activeCategory = null;
+let cart = JSON.parse(sessionStorage.getItem("ss_cart") || "[]");
+
+function renderCartCount() {
+  document.getElementById("cartCount").textContent = cart.reduce((s, i) => s + i.qty, 0);
+}
+
+function doSearch() {
+  activeQuery = document.getElementById("searchInput").value.trim();
+  renderResults();
+}
+
+function setCategory(cat, el) {
+  activeCategory = cat;
+  document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  renderResults();
+}
+
+function clearQuery() {
+  activeQuery = "";
+  document.getElementById("searchInput").value = "";
+  renderResults();
+}
+
+function getFiltered() {
+  const q = activeQuery.toLowerCase();
+  return PRODUCTS.filter(p => {
+    const matchCat = !activeCategory || p.category === activeCategory;
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.category.includes(q);
+    return matchCat && matchQ;
+  });
+}
+
+function getSorted(products) {
+  const sort = document.getElementById("sortSelect").value;
+  const copy = [...products];
+  if (sort === "price-asc")  return copy.sort((a, b) => a.price - b.price);
+  if (sort === "price-desc") return copy.sort((a, b) => b.price - a.price);
+  if (sort === "rating")     return copy.sort((a, b) => b.rating - a.rating);
+  if (sort === "newest")     return copy.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+  // relevance: exact name match first
+  if (activeQuery) {
+    const q = activeQuery.toLowerCase();
+    return copy.sort((a, b) => {
+      const aExact = a.name.toLowerCase().startsWith(q) ? 1 : 0;
+      const bExact = b.name.toLowerCase().startsWith(q) ? 1 : 0;
+      return bExact - aExact;
+    });
+  }
+  return copy;
+}
+
+function renderResults() {
+  const filtered = getFiltered();
+  const sorted = getSorted(filtered);
+  const grid = document.getElementById("resultsGrid");
+  const countEl = document.getElementById("resultsCount");
+
+  const queryPart = activeQuery
+    ? `Showing results for <span class="query-badge">"${activeQuery}" <button onclick="clearQuery()">✕</button></span> &nbsp;`
+    : "";
+  countEl.innerHTML = `${queryPart}<strong>${sorted.length}</strong> product${sorted.length !== 1 ? "s" : ""} found`;
+
+  if (!sorted.length) {
+    grid.innerHTML = `<div class="no-results"><div class="icon">🔍</div><p>No products match your search.</p><p style="margin-top:0.5rem;font-size:0.85rem">Try different keywords or <a href="index.html" style="color:#6c63ff;">browse all products</a></p></div>`;
+    return;
+  }
+
+  grid.innerHTML = sorted.map(p => {
+    const stars = "★".repeat(Math.round(p.rating)) + "☆".repeat(5 - Math.round(p.rating));
+    return `
+      <a class="product-card" href="product.html?id=${p.id}">
+        <div class="img-wrap">
+          <span>${p.emoji}</span>
+          ${p.badge ? `<span class="badge ${p.badge.toLowerCase()}">${p.badge}</span>` : ""}
+        </div>
+        <div class="card-body">
+          <div class="card-sku">${p.sku}</div>
+          <div class="card-name">${highlight(p.name, activeQuery)}</div>
+          <div class="card-desc">${p.desc}</div>
+          <div class="card-stars"><span class="stars">${stars}</span> ${p.rating} (${p.reviews.toLocaleString()})</div>
+          <div class="card-footer">
+            <div class="card-price">$${p.price.toFixed(2)}</div>
+            <button class="add-btn" onclick="event.preventDefault();event.stopPropagation();addToCart(${p.id})">+ Add</button>
+          </div>
+        </div>
+      </a>`;
+  }).join("");
+}
+
+function highlight(text, query) {
+  if (!query) return text;
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  return text.replace(re, "<mark style='background:#ede9ff;color:#6c63ff;border-radius:2px;padding:0 1px'>$1</mark>");
+}
+
+function addToCart(productId) {
+  const product = PRODUCTS.find(p => p.id === productId);
+  const existing = cart.find(i => i.product.id === productId);
+  if (existing) { existing.qty++; } else { cart.push({ product, qty: 1 }); }
+  sessionStorage.setItem("ss_cart", JSON.stringify(cart));
+  renderCartCount();
+  showToast(`${product.emoji} ${product.name} added to cart`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ── Init — read URL params (navigated from index.html search bar) ──────────
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  const q = params.get("q") || "";
+  const cat = params.get("category") || null;
+  if (q) {
+    document.getElementById("searchInput").value = q;
+    activeQuery = q;
+  }
+  if (cat) {
+    activeCategory = cat;
+    document.querySelectorAll(".filter-chip").forEach(c => {
+      if (c.textContent.toLowerCase().includes(cat)) c.classList.add("active");
+      else c.classList.remove("active");
+    });
+  }
+  renderCartCount();
+  renderResults();
+});
+</script>
+</body>
+</html>
