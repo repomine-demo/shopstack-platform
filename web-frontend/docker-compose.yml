@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  web-frontend:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - API_GATEWAY_URL=${API_GATEWAY_URL:-http://api-gateway:5000}
+    restart: unless-stopped
+
+# Note: This serves the static storefront via nginx.
+# For API calls to work, set API_GATEWAY_URL to a running api-gateway instance
+# or use the root docker-compose.yml in shopstack-platform for the full stack.

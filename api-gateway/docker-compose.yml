@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  api-gateway:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:8001}
+      - PAYMENTS_SERVICE_URL=${PAYMENTS_SERVICE_URL:-http://payments-service:8002}
+      - CATALOG_SERVICE_URL=${CATALOG_SERVICE_URL:-http://catalog-service:8003}
+      - PORT=5000
+    restart: unless-stopped
+
+# Note: The gateway is stateless — it proxies to upstream services.
+# Set *_SERVICE_URL env vars to point at running service instances.
+# For full-stack local dev, use the root docker-compose.yml in shopstack-platform.
