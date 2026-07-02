@@ -1,0 +1,75 @@
+version: "1.0"
+last_updated: "2026-06-15"
+source_type: data_classification
+
+classification_categories:
+  pii:
+    description: Personally Identifiable Information — identifies a natural person
+    regulation: GDPR, CCPA
+    handling: Never log. Mask in error messages. Erasure on request.
+    fields:
+      - email
+      - full_name
+
+  payment:
+    description: Payment and billing data — financial identifiers and amounts
+    regulation: PCI-DSS (via Stripe)
+    handling: Never store raw card data. All payment identifiers are opaque Stripe references.
+    fields:
+      - paymentMethodId
+      - stripeCustomerId
+      - stripeSubscriptionId
+      - amountDue
+      - amountPaid
+      - invoiceUrl
+
+  auth_credential:
+    description: Credentials that grant authentication or session access
+    regulation: Internal security policy
+    handling: Passwords bcrypt-hashed. Token hashes only. Never log or transmit after storage.
+    fields:
+      - hashed_password
+      - token_hash
+
+  auth_session:
+    description: Active session tokens that authorize API access
+    regulation: Internal security policy
+    handling: Short TTL on access tokens. Refresh tokens revocable. Stored in localStorage (documented tradeoff).
+    fields:
+      - access_token
+      - refresh_token
+
+  operational:
+    description: Internal system identifiers — not directly sensitive but must be tenant-scoped
+    regulation: Internal data governance
+    handling: All queries must include tenant_id filter. Never expose cross-tenant.
+    fields:
+      - tenant_id
+      - user_id
+      - stripeInvoiceId
+
+service_classifications:
+  auth-service:
+    categories: [pii, auth_credential, auth_session]
+    risk_level: HIGH
+    reason: Stores all user credentials and issues session tokens
+
+  payments-service:
+    categories: [pii, payment]
+    risk_level: HIGH
+    reason: Processes billing data and stores Stripe payment references
+
+  api-gateway:
+    categories: [auth_session, operational]
+    risk_level: MEDIUM
+    reason: Routes JWTs on every request; does not store sensitive data
+
+  web-frontend:
+    categories: [auth_session, pii]
+    risk_level: MEDIUM
+    reason: Collects email and paymentMethodId at checkout; stores tokens in localStorage
+
+  catalog-service:
+    categories: [operational]
+    risk_level: LOW
+    reason: Handles product catalog data only; no user PII or payment data

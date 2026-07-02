@@ -1,0 +1,96 @@
+{
+  "flow_name": "subscription-checkout",
+  "figma_file": "ShopStack — Checkout Flow",
+  "source_type": "figma_export",
+  "version": "2.4.1",
+  "last_modified": "2026-06-15T10:30:00Z",
+  "screens": [
+    {
+      "name": "PricingPage",
+      "description": "Displays Starter / Growth / Enterprise plan cards with CTA buttons",
+      "components": [
+        {
+          "name": "PlanCard",
+          "type": "card",
+          "linked_route": null,
+          "linked_service": "web-frontend",
+          "properties": {
+            "plans": ["starter", "growth", "enterprise"]
+          }
+        },
+        {
+          "name": "SelectPlanButton",
+          "type": "button",
+          "action": "navigate_to_checkout",
+          "linked_route": null,
+          "linked_service": "web-frontend"
+        }
+      ],
+      "user_actions": ["select_plan", "view_plan_details"]
+    },
+    {
+      "name": "CheckoutForm",
+      "description": "Billing details form: email, payment method, billing address",
+      "components": [
+        {
+          "name": "EmailInput",
+          "type": "input",
+          "field": "email",
+          "linked_route": "POST /api/payments/subscribe",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "PaymentMethodInput",
+          "type": "input",
+          "field": "paymentMethodId",
+          "linked_route": "POST /api/payments/subscribe",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "BillingAddressForm",
+          "type": "form-group",
+          "fields": ["billingName", "addressLine1", "city", "country", "postalCode"],
+          "linked_route": "POST /api/payments/subscribe",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "SubscribeButton",
+          "type": "button",
+          "action": "submit_subscription",
+          "linked_route": "POST /api/payments/subscribe",
+          "linked_service": "api-gateway"
+        }
+      ],
+      "user_actions": ["enter_billing_details", "submit_checkout"],
+      "linked_frontend_file": "web-frontend/src/services/apiClient.ts"
+    },
+    {
+      "name": "CheckoutConfirmation",
+      "description": "Success state: subscription ID, plan name, next billing date",
+      "components": [
+        {
+          "name": "SubscriptionIdDisplay",
+          "type": "text",
+          "field": "subscriptionId",
+          "linked_route": "POST /api/payments/subscribe",
+          "linked_service": "payments-service"
+        },
+        {
+          "name": "InvoiceLink",
+          "type": "link",
+          "action": "view_invoices",
+          "linked_route": "GET /api/payments/invoices",
+          "linked_service": "api-gateway"
+        }
+      ],
+      "user_actions": ["view_confirmation", "navigate_to_invoices"]
+    }
+  ],
+  "linked_routes": [
+    "POST /api/payments/subscribe",
+    "GET /api/payments/invoices"
+  ],
+  "linked_services": ["web-frontend", "api-gateway", "payments-service"],
+  "linked_schemas": ["Subscription", "Invoice"],
+  "linked_prd": "docs/prd-checkout-subscriptions.md"
+}

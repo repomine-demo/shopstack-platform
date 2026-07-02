@@ -1,0 +1,121 @@
+version: "1.0"
+last_updated: "2026-06-15"
+source_type: data_classification
+
+pii_fields:
+  - field: email
+    classification: pii
+    services:
+      - auth-service
+      - payments-service
+    models:
+      - User
+      - Subscription
+    evidence_files:
+      - auth-service/models/user.py
+      - payments-service/src/routes/payments.ts
+    notes: Primary user identifier. Subject to GDPR right-to-erasure.
+
+  - field: full_name
+    classification: pii
+    services:
+      - auth-service
+    models:
+      - User
+    evidence_files:
+      - auth-service/models/user.py
+    notes: Stored at registration. Displayed in admin UI.
+
+  - field: hashed_password
+    classification: auth_credential
+    services:
+      - auth-service
+    models:
+      - User
+    evidence_files:
+      - auth-service/models/user.py
+    notes: bcrypt hash, work factor 12. Never logged or transmitted after storage.
+
+  - field: access_token
+    classification: auth_session
+    services:
+      - auth-service
+      - web-frontend
+    models: []
+    evidence_files:
+      - auth-service/routes/auth.py
+      - web-frontend/src/services/authService.ts
+    notes: JWT, 15-minute TTL. Stored in localStorage (XSS tradeoff).
+
+  - field: refresh_token
+    classification: auth_session
+    services:
+      - auth-service
+      - web-frontend
+    models:
+      - RefreshToken
+    evidence_files:
+      - auth-service/models/user.py
+      - web-frontend/src/services/authService.ts
+    notes: Opaque token, 30-day TTL. Stored as hash in DB.
+
+  - field: token_hash
+    classification: auth_credential
+    services:
+      - auth-service
+    models:
+      - RefreshToken
+    evidence_files:
+      - auth-service/models/user.py
+    notes: SHA-256 hash of the refresh token. Never expose the raw value.
+
+  - field: paymentMethodId
+    classification: payment
+    services:
+      - payments-service
+    models:
+      - ChargeRequest
+    evidence_files:
+      - payments-service/src/routes/payments.ts
+      - payments-service/src/models/subscription.ts
+    notes: Stripe token. Never a raw card number. PCI-DSS Stripe responsibility.
+
+  - field: stripeCustomerId
+    classification: payment
+    services:
+      - payments-service
+    models:
+      - Subscription
+    evidence_files:
+      - payments-service/src/models/subscription.ts
+    notes: Opaque Stripe customer reference.
+
+  - field: stripeSubscriptionId
+    classification: payment
+    services:
+      - payments-service
+    models:
+      - Subscription
+    evidence_files:
+      - payments-service/src/models/subscription.ts
+    notes: Opaque Stripe subscription reference.
+
+  - field: amountDue
+    classification: payment
+    services:
+      - payments-service
+    models:
+      - Invoice
+    evidence_files:
+      - payments-service/src/models/subscription.ts
+    notes: Financial record in cents. Tenant-scoped.
+
+  - field: amountPaid
+    classification: payment
+    services:
+      - payments-service
+    models:
+      - Invoice
+    evidence_files:
+      - payments-service/src/models/subscription.ts
+    notes: Financial record in cents. Tenant-scoped.

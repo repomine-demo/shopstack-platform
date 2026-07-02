@@ -1,0 +1,99 @@
+{
+  "flow_name": "user-authentication",
+  "figma_file": "ShopStack — Auth Flow",
+  "source_type": "figma_export",
+  "version": "1.8.0",
+  "last_modified": "2026-06-10T14:00:00Z",
+  "screens": [
+    {
+      "name": "LoginPage",
+      "description": "Email + password login form with 'Forgot password' link",
+      "components": [
+        {
+          "name": "EmailInput",
+          "type": "input",
+          "field": "email",
+          "linked_route": "POST /api/auth/login",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "PasswordInput",
+          "type": "input",
+          "field": "password",
+          "linked_route": "POST /api/auth/login",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "SignInButton",
+          "type": "button",
+          "action": "submit_login",
+          "linked_route": "POST /api/auth/login",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "ForgotPasswordLink",
+          "type": "link",
+          "action": "navigate_to_password_reset"
+        }
+      ],
+      "user_actions": ["enter_credentials", "submit_login"],
+      "linked_frontend_file": "web-frontend/src/components/Auth/Login.tsx"
+    },
+    {
+      "name": "RegisterPage",
+      "description": "New tenant registration: email, password, full name, tenant name",
+      "components": [
+        {
+          "name": "EmailInput",
+          "type": "input",
+          "field": "email",
+          "linked_route": "POST /api/auth/register",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "FullNameInput",
+          "type": "input",
+          "field": "full_name",
+          "linked_route": "POST /api/auth/register",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "PasswordInput",
+          "type": "input",
+          "field": "password",
+          "linked_route": "POST /api/auth/register",
+          "linked_service": "api-gateway"
+        },
+        {
+          "name": "RegisterButton",
+          "type": "button",
+          "action": "submit_registration",
+          "linked_route": "POST /api/auth/register",
+          "linked_service": "api-gateway"
+        }
+      ],
+      "user_actions": ["enter_registration_details", "submit_registration"],
+      "linked_frontend_file": "web-frontend/src/services/authService.ts"
+    },
+    {
+      "name": "AuthSuccessState",
+      "description": "Post-login redirect to dashboard with session established",
+      "components": [
+        {
+          "name": "DashboardRedirect",
+          "type": "navigation",
+          "action": "navigate_to_dashboard"
+        }
+      ],
+      "user_actions": ["auto_redirect_dashboard"]
+    }
+  ],
+  "linked_routes": [
+    "POST /api/auth/login",
+    "POST /api/auth/register",
+    "POST /api/auth/logout"
+  ],
+  "linked_services": ["web-frontend", "api-gateway", "auth-service"],
+  "linked_schemas": ["User", "RefreshToken"],
+  "linked_prd": "auth-service/docs/prd-user-authentication.md"
+}
