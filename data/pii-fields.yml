@@ -1,0 +1,54 @@
+source_type: data_classification
+title: ShopStack PII Fields Registry
+description: >
+  Canonical list of fields containing personally identifiable information (PII)
+  across all ShopStack services. Used by Blueprint workspace intelligence to
+  identify data sensitivity touchpoints.
+
+pii_fields:
+  - field: email
+    service: auth-service
+    table: users
+    regulation: GDPR Art. 4, CCPA
+    handling: store normalised (lowercase); mask in logs as u***@domain.com; never return in error responses
+  - field: fullName
+    service: auth-service
+    table: users
+    regulation: GDPR Art. 4
+    handling: optional; must be excluded from analytics event payloads
+  - field: billingAddress
+    service: payments-service
+    table: subscriptions
+    regulation: PCI-DSS, GDPR Art. 4
+    handling: encrypt at rest; never log; never include in non-payment API responses
+  - field: paymentMethodId
+    service: payments-service
+    table: subscriptions
+    regulation: PCI-DSS
+    handling: Stripe token — store encrypted; never log; treat as credential-class secret
+  - field: subscriptionId
+    service: payments-service
+    table: subscriptions
+    regulation: PCI-DSS (indirect)
+    handling: high-sensitivity identifier; links payment history to a user account; restrict API access to owner
+  - field: userId
+    service: auth-service
+    table: users
+    regulation: GDPR Art. 4
+    handling: internal identifier; must not appear in client-facing URLs without authorisation check
+  - field: authToken
+    service: auth-service
+    table: refresh_tokens
+    regulation: GDPR Art. 32 (security of processing)
+    handling: store hashed (token_hash); never log; rotate on each use; revoke on logout
+
+payment_fields:
+  - paymentMethodId
+  - billingAddress
+  - cardLastFour
+  - subscriptionId
+
+auth_fields:
+  - authToken
+  - hashedPassword
+  - refreshToken

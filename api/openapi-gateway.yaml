@@ -1,0 +1,254 @@
+openapi: "3.1.0"
+info:
+  title: ShopStack API Gateway
+  version: "1.0.0"
+  description: >
+    Public-facing API gateway for ShopStack. All routes require a valid
+    JWT Bearer token unless marked public.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TokenResponse:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken:
+          type: string
+          description: Short-lived JWT (15 min)
+        refreshToken:
+          type: string
+          description: Long-lived token (30 days); store in httpOnly cookie
+        expiresIn:
+          type: integer
+          example: 900
+
+    RegisterRequest:
+      type: object
+      required: [email, password, fullName, tenantId]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        fullName:
+          type: string
+        tenantId:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    SubscribeRequest:
+      type: object
+      required: [planId, paymentMethodId, billingAddress]
+      properties:
+        planId:
+          type: string
+        paymentMethodId:
+          type: string
+          description: Stripe PaymentMethod ID (never stored unencrypted)
+        billingAddress:
+          type: object
+          properties:
+            street: { type: string }
+            city: { type: string }
+            postcode: { type: string }
+            country: { type: string }
+
+    SubscriptionResponse:
+      type: object
+      properties:
+        subscriptionId:
+          type: string
+        status:
+          type: string
+          enum: [active, past_due, cancelled]
+        nextBillingDate:
+          type: string
+          format: date
+
+    Invoice:
+      type: object
+      properties:
+        invoiceId: { type: string }
+        subscriptionId: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        status: { type: string, enum: [paid, open, void] }
+        invoiceDate: { type: string, format: date }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        code: { type: string }
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Account created, tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      summary: Authenticate a user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Credentials valid, tokens returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      summary: Revoke the current refresh token
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Logged out
+
+  /auth/me:
+    get:
+      summary: Return the authenticated user's profile
+      tags: [Auth]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId: { type: integer }
+                  email: { type: string }
+                  fullName: { type: string }
+                  tenantId: { type: string }
+
+  /payments/subscribe:
+    post:
+      summary: Create a subscription
+      tags: [Payments]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscribeRequest"
+      responses:
+        "201":
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "402":
+          description: Payment declined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/subscribe/{subscriptionId}:
+    delete:
+      summary: Cancel a subscription
+      tags: [Payments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Subscription cancelled
+        "404":
+          description: Not found
+
+  /payments/invoices:
+    get:
+      summary: List invoices for the authenticated user
+      tags: [Payments]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+      responses:
+        "200":
+          description: Paginated invoice list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Invoice"
+                  total: { type: integer }
+        "401":
+          description: Unauthenticated

@@ -1,0 +1,48 @@
+{
+  "source_type": "figma_export",
+  "figma_file": "ShopStack — User Authentication",
+  "flow_name": "user-login",
+  "exported_at": "2026-07-01T10:00:00Z",
+  "screens": [
+    {
+      "id": "screen-login",
+      "name": "Login",
+      "route": "POST /auth/login",
+      "service": "auth-service",
+      "components": ["EmailInput", "PasswordInput", "LoginButton", "ForgotPasswordLink", "RegisterLink"],
+      "sensitive_fields": ["email", "authToken"],
+      "actions": [
+        { "label": "Log in", "target": "screen-dashboard", "method": "POST /auth/login" },
+        { "label": "Register", "target": "screen-register", "method": "navigate" }
+      ]
+    },
+    {
+      "id": "screen-register",
+      "name": "Register",
+      "route": "POST /auth/register",
+      "service": "auth-service",
+      "components": ["EmailInput", "PasswordInput", "FullNameInput", "RegisterButton"],
+      "sensitive_fields": ["email", "hashedPassword"],
+      "actions": [
+        { "label": "Create Account", "target": "screen-dashboard", "method": "POST /auth/register" }
+      ]
+    },
+    {
+      "id": "screen-dashboard",
+      "name": "Account Dashboard",
+      "route": "GET /auth/me",
+      "service": "auth-service",
+      "components": ["UserGreeting", "AccountNav", "RecentActivity"],
+      "actions": [
+        { "label": "Log out", "target": "screen-login", "method": "POST /auth/logout" }
+      ]
+    }
+  ],
+  "linked_routes": [
+    "POST /auth/login",
+    "POST /auth/register",
+    "POST /auth/logout",
+    "GET /auth/me"
+  ],
+  "linked_services": ["auth-service", "api-gateway"]
+}

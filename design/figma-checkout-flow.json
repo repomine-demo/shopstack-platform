@@ -1,0 +1,54 @@
+{
+  "source_type": "figma_export",
+  "figma_file": "ShopStack — Checkout & Subscriptions",
+  "flow_name": "subscription-checkout",
+  "exported_at": "2026-07-01T10:00:00Z",
+  "screens": [
+    {
+      "id": "screen-product-list",
+      "name": "Product List",
+      "route": "GET /catalog/products",
+      "service": "catalog-service",
+      "components": ["ProductCard", "PriceTag", "PlanBadge", "CTAButton"],
+      "actions": [
+        { "label": "Select Plan", "target": "screen-checkout-form", "method": "navigate" }
+      ]
+    },
+    {
+      "id": "screen-checkout-form",
+      "name": "Checkout Form",
+      "route": "POST /payments/subscribe",
+      "service": "payments-service",
+      "components": ["PlanSummary", "BillingAddressForm", "PaymentMethodInput", "SubscribeButton"],
+      "sensitive_fields": ["billingAddress", "paymentMethodId"],
+      "actions": [
+        { "label": "Subscribe", "target": "screen-confirmation", "method": "POST /payments/subscribe" },
+        { "label": "Back", "target": "screen-product-list", "method": "navigate" }
+      ]
+    },
+    {
+      "id": "screen-confirmation",
+      "name": "Subscription Confirmed",
+      "route": null,
+      "service": null,
+      "components": ["ConfirmationBanner", "SubscriptionSummary", "InvoiceLink"],
+      "actions": [
+        { "label": "View Invoices", "target": "screen-invoice-list", "method": "navigate" }
+      ]
+    },
+    {
+      "id": "screen-invoice-list",
+      "name": "Invoice History",
+      "route": "GET /payments/invoices",
+      "service": "payments-service",
+      "components": ["InvoiceTable", "InvoiceRow", "DownloadButton"],
+      "actions": []
+    }
+  ],
+  "linked_routes": [
+    "GET /catalog/products",
+    "POST /payments/subscribe",
+    "GET /payments/invoices"
+  ],
+  "linked_services": ["catalog-service", "payments-service", "api-gateway"]
+}

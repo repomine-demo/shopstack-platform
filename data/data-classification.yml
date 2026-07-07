@@ -1,0 +1,65 @@
+source_type: data_classification
+title: ShopStack Data Classification Policy
+description: >
+  Maps data fields to sensitivity categories and service-level risk ratings.
+  Consumed by Blueprint's DataSensitivityCollector (WSINT-8) to populate
+  the workspace intelligence data_sensitivity dimension.
+
+classification_categories:
+  pii:
+    description: Personally Identifiable Information — directly identifies a natural person
+    regulation: GDPR Art. 4, CCPA § 1798.140
+    handling: encrypt at rest, mask in logs, exclude from analytics
+    fields:
+      - email
+      - fullName
+      - billingAddress
+      - userId
+  payment:
+    description: Payment card and subscription data — PCI-DSS in scope
+    regulation: PCI-DSS v4.0
+    handling: encrypt at rest, never log, store tokenised via Stripe
+    fields:
+      - paymentMethodId
+      - cardLastFour
+      - billingAddress
+      - subscriptionId
+  auth:
+    description: Credential and session material — must never be stored in plaintext
+    regulation: GDPR Art. 32, OWASP ASVS L2
+    handling: store hashed (bcrypt/argon2), rotate refresh tokens, revoke on logout
+    fields:
+      - hashedPassword
+      - authToken
+      - refreshToken
+      - tokenHash
+  internal:
+    description: Internal identifiers with no direct regulatory classification but restricted access
+    regulation: Internal policy
+    handling: restrict to owner via authorisation checks; not for public endpoints
+    fields:
+      - tenantId
+      - subscriptionId
+      - userId
+
+service_classifications:
+  auth-service:
+    risk_level: HIGH
+    reason: Handles credential storage, session tokens, and PII (email, fullName)
+    sensitive_fields: [email, fullName, hashedPassword, authToken, refreshToken, userId]
+  payments-service:
+    risk_level: HIGH
+    reason: PCI-DSS in-scope; stores paymentMethodId and billing addresses
+    sensitive_fields: [paymentMethodId, billingAddress, subscriptionId, cardLastFour]
+  api-gateway:
+    risk_level: MEDIUM
+    reason: Proxies all traffic; must validate JWT on every request; no persistent storage of PII
+    sensitive_fields: [authToken]
+  catalog-service:
+    risk_level: LOW
+    reason: Serves product/inventory data; no direct PII storage; tenantId scoping required
+    sensitive_fields: [tenantId]
+  web-frontend:
+    risk_level: MEDIUM
+    reason: Renders PII (email in account page) and handles payment form via Stripe Elements
+    sensitive_fields: [email, paymentMethodId]
